@@ -179,13 +179,29 @@
             <div class="logo-text">Emergency Agent</div>
         </a>
         <ul>
+            @auth
             <li><a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a></li>
             <li><a href="{{ route('history') }}" class="{{ request()->routeIs('history') ? 'active' : '' }}">History</a></li>
             <li><a href="{{ route('nearby') }}" class="{{ request()->routeIs('nearby') ? 'active' : '' }}">Help Map</a></li>
             <li><a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">Insights</a></li>
             <li><a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'active' : '' }}">Agent AI</a></li>
             <li><a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'active' : '' }}">Feedback</a></li>
+            <li>
+                <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
+                    @csrf
+                    <button type="submit" style="background: none; border: none; color: var(--primary); font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;">LOGOUT</button>
+                </form>
+            </li>
+            @else
+            <li><a href="{{ route('login') }}" style="color: #fff; font-weight: 700;">PROCEED TO LOGIN ➔</a></li>
+            @endauth
         </ul>
+        @auth
+        <div style="font-size: 0.8rem; color: var(--text-dim); display: flex; align-items: center; gap: 10px;">
+            <div style="width: 8px; height: 8px; background: var(--low); border-radius: 50%;"></div>
+            AGENT: <strong>{{ strtoupper(Auth::user()->name) }}</strong>
+        </div>
+        @endauth
     </nav>
 
     <div class="container">

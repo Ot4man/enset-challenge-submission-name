@@ -55,7 +55,38 @@
     .quick-btn:hover { background: var(--primary); border-color: transparent; transform: translateY(-2px); }
 
     /* Custom Call Dispatch Interface */
-    .dispatch-interface { display: none; margin: 2rem 0; padding: 2rem; background: radial-gradient(circle at center, rgba(244, 63, 94, 0.2), #0f172a); border: 2px solid var(--primary); border-radius: 1.5rem; text-align: center; }
+    .dispatch-card {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        display: none;
+        align-items: center;
+        gap: 1.5rem;
+        animation: pulseBorder 2s infinite;
+    }
+
+    @keyframes pulseBorder {
+        0% { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 0px rgba(239, 68, 68, 0); }
+        50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+        100% { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 0px rgba(239, 68, 68, 0); }
+    }
+
+    .pulse {
+        width: 15px;
+        height: 15px;
+        background: #ef4444;
+        border-radius: 50%;
+        box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+        animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
 </style>
 @endsection
 
@@ -83,6 +114,17 @@
         <textarea id="message" placeholder="Describe the crisis details here..."></textarea>
     </div>
 
+    <!-- Image Upload Portal -->
+    <div style="margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+        <label for="image-upload" style="flex: 1; background: rgba(255,255,255,0.05); border: 2px dashed var(--border); padding: 1.5rem; border-radius: 1rem; text-align: center; cursor: pointer; transition: 0.3s; color: var(--text-dim);">
+            📸 ATTACH PHOTO EVIDENCE
+            <input type="file" id="image-upload" style="display: none;" accept="image/*" onchange="previewUpload(this)">
+        </label>
+        <div id="image-preview-container" style="display: none; width: 80px; height: 80px; border-radius: 12px; overflow: hidden; border: 2px solid var(--primary);">
+            <img id="image-preview" src="" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+    </div>
+
     <div class="input-actions">
         <button id="mic-btn" class="mic-btn" onclick="toggleListening()">
             <span id="mic-label">🎙️ Start Voice Input</span>
@@ -105,11 +147,12 @@
         <div class="step" id="step-action"><i></i> ActionAgent</div>
     </div>
 
-    <!-- Dispatch Alert (Calling Simulation) -->
-    <div id="dispatch-interface" class="dispatch-interface">
-        <h2 style="color: #fff; margin-bottom: 0.5rem;">📞 AI EMERGENCY TRANSMISSION</h2>
-        <div id="connecting-pulse" style="width: 12px; height: 12px; background: #fff; border-radius: 50%; margin: 1rem auto; animation: pulse 1s infinite alternate;"></div>
-        <p id="dispatch-msg" style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">Initializing Priority Trunk Connection...</p>
+    <div id="dispatch-bar" class="dispatch-card">
+        <div class="pulse"></div>
+        <div>
+            <h4 id="dispatch-title" style="color: #ef4444; margin-bottom: 0.2rem;">AI Dispatching to Local Center...</h4>
+            <p id="dispatch-status" style="font-size: 0.85rem; color: var(--text-dim);">Analyzing optimal transmission channel...</p>
+        </div>
     </div>
 
     <!-- Results -->
@@ -125,8 +168,8 @@
         
         <!-- Analysis Visualization -->
         <div id="vision-analysis" style="display: none; margin-top: 2rem;">
-            <div style="position: relative; border-radius: 1.5rem; overflow: hidden; border: 2px solid var(--border); background: #000; height: 300px;">
-                <img id="incident-photo" src="" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.6; filter: grayscale(50%);">
+            <div style="position: relative; border-radius: 1.5rem; overflow: hidden; border: 2px solid var(--border); background: #000; height: 350px;">
+                <img id="incident-photo" src="" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;">
                 <div style="position: absolute; top: 0; left: 0; padding: 1rem; color: #fff; font-size: 0.8rem; font-family: monospace; background: rgba(0,0,0,0.5);">
                     [AI_VISION_FEED_ACTIVE] <br> SCANNING_INCIDENT_SITE... <br> DEPTH_MAP: OK
                 </div>
@@ -152,6 +195,17 @@
     function prefillEmergency(txt) {
         document.getElementById('message').value = txt;
         document.getElementById('message').focus();
+    }
+
+    function previewUpload(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('image-preview').src = e.target.result;
+                document.getElementById('image-preview-container').style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
     }
 
     // Voice Feedback (Web Speech API)
@@ -195,17 +249,21 @@
     // Agent Sequence Simulation
     async function analyzeCrisis() {
         const message = document.getElementById('message').value.trim();
+        const imageFile = document.getElementById('image-upload').files[0];
         const btn = document.getElementById('submit-btn');
         const results = document.getElementById('result-area');
         const activeSteps = document.getElementById('agent-steps');
-        const dispatchUI = document.getElementById('dispatch-interface');
+        const dispatchBar = document.getElementById('dispatch-bar');
 
-        if (!message) return;
+        if (!message && !imageFile) {
+            alert("Provide either a description or a photo evidence.");
+            return;
+        }
 
         // Reset UI
         btn.disabled = true;
         results.style.display = 'none';
-        dispatchUI.style.display = 'none';
+        dispatchBar.style.display = 'none';
         activeSteps.style.display = 'flex';
         
         const steps = ['step-analyzer', 'step-assessor', 'step-decision', 'step-dispatch', 'step-action'];
@@ -217,28 +275,34 @@
             if(i < 3) await new Promise(r => setTimeout(r, 600)); // Simulated agent delay
         }
 
+        // Using FormData for uploads
+        const formData = new FormData();
+        formData.append('message', message);
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+
         try {
             const response = await fetch("{{ route('analyze') }}", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-                body: JSON.stringify({ message })
+                headers: { "X-CSRF-TOKEN": "{{ csrf_token() }}", "Accept": "application/json" },
+                body: formData
             });
 
             const data = await response.json();
 
-            // Special Dispatch logic
-            if (data.risk_level === 'critical' || data.risk_level === 'high') {
-                dispatchUI.style.display = 'block';
-                document.getElementById('dispatch-msg').innerText = "ESTABLISHING EMERGENCY VOICE TRUNK...";
-                await new Promise(r => setTimeout(r, 1200));
-                document.getElementById('dispatch-msg').innerText = "CONNECTED: Automated Alert Sent via VoIP. Priority: IMMEDIATE";
+            // Handle Dispatch Logic
+            if(data.risk_level === 'critical' || data.risk_level === 'high') {
+                dispatchBar.style.display = 'flex';
+                const dispatchStatus = document.getElementById('dispatch-status');
+                const dispatchTitle = document.getElementById('dispatch-title');
+                dispatchTitle.innerText = "Transmitting to 911/112 Dispatchers...";
+                dispatchStatus.innerText = "Connecting to VoIP Priority Channel: " + data.dispatch_status.channel;
+                
+                setTimeout(() => {
+                    dispatchStatus.innerText = "CONNECTED: Voice alert transmission in progress. Priority: IMMEDIATE";
+                }, 1500);
             }
-
-            // Results population
-            document.getElementById('emergency-title').innerText = "Crisis Type: " + data.emergency_type.toUpperCase().replace('_', ' ');
-            const rb = document.getElementById('risk-badge');
-            rb.innerText = data.risk_level + " RISK";
-            rb.className = "badge badge-" + data.risk_level;
 
             // Handle Medical Tips
             const medCard = document.getElementById('medical-tips-card');
@@ -256,19 +320,29 @@
                 medCard.style.display = 'none';
             }
 
+            // Results population
+            document.getElementById('emergency-title').innerText = "Crisis Type: " + data.emergency_type.toUpperCase().replace('_', ' ');
+            const rb = document.getElementById('risk-badge');
+            rb.innerText = data.risk_level + " RISK";
+            rb.className = "badge badge-" + data.risk_level;
+
             // Handle Vision Logic
             const vision = document.getElementById('vision-analysis');
             const photo = document.getElementById('incident-photo');
-            const typeImages = {
-                fire: 'https://images.unsplash.com/photo-1542353436-312f02c16299?q=80&w=600',
-                accident: 'https://images.unsplash.com/photo-1595085610813-f667ca84d16d?q=80&w=600',
-                health: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=600',
-                natural_disaster: 'https://images.unsplash.com/photo-1511210414434-7389868779b7?q=80&w=600',
-                unknown: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600'
-            };
             
-            photo.src = typeImages[data.emergency_type] || typeImages.unknown;
+            // Show uploaded image if exists, else type image
+            photo.src = data.uploaded_image_url || getPlaceholderImage(data.emergency_type);
             vision.style.display = 'block';
+
+            function getPlaceholderImage(type) {
+                const typeImages = {
+                    fire: 'https://images.unsplash.com/photo-1542353436-312f02c16299?q=80&w=600',
+                    accident: 'https://images.unsplash.com/photo-1595085610813-f667ca84d16d?q=80&w=600',
+                    health: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=600',
+                    natural_disaster: 'https://images.unsplash.com/photo-1511210414434-7389868779b7?q=80&w=600',
+                };
+                return typeImages[type] || 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600';
+            }
 
             const list = document.getElementById('action-list');
             list.innerHTML = "";
@@ -281,6 +355,7 @@
 
             results.style.display = 'block';
         } catch (e) {
+            console.error(e);
             alert("Crisis logic pipeline failed.");
         } finally {
             btn.disabled = false;

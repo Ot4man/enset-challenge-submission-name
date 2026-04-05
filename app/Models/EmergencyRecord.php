@@ -11,6 +11,7 @@ class EmergencyRecord extends Model
 
     protected $fillable = [
         'message',
+        'image_path',
         'type',
         'risk_level',
         'actions',
