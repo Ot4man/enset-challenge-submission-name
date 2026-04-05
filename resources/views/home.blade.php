@@ -38,6 +38,9 @@
     .step i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--text-dim); }
     .step.active i { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
 
+    /* Animated scan line for vision feed */
+    @keyframes scanAnim { 0% { top: 0; } 100% { top: 100%; } }
+
     /* Action List Stylings */
     .action-list { list-style: none; margin-top: 1.5rem; }
     .action-list li { margin-bottom: 0.8rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; transition: 0.3s; animation: reveal 0.5s forwards; }
@@ -91,6 +94,10 @@
 
     <!-- Micro-Agent Progress Bar -->
     <div id="agent-steps" class="agent-steps">
+        <div style="width: 100%; text-align: center; margin-bottom: 2rem;">
+            <img src="/assets/img/avatar.png" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary); animation: pulse 2s infinite;">
+            <p style="margin-top: 1rem; color: #fff; font-size: 1rem; font-weight: 700; letter-spacing: 2px;">AI AGENT COLLABORATING...</p>
+        </div>
         <div class="step" id="step-analyzer"><i></i> InputAnalyzerAgent</div>
         <div class="step" id="step-assessor"><i></i> RiskAssessmentAgent</div>
         <div class="step" id="step-decision"><i></i> DecisionAgent</div>
@@ -116,6 +123,18 @@
             </ul>
         </div>
         
+        <!-- Analysis Visualization -->
+        <div id="vision-analysis" style="display: none; margin-top: 2rem;">
+            <div style="position: relative; border-radius: 1.5rem; overflow: hidden; border: 2px solid var(--border); background: #000; height: 300px;">
+                <img id="incident-photo" src="" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.6; filter: grayscale(50%);">
+                <div style="position: absolute; top: 0; left: 0; padding: 1rem; color: #fff; font-size: 0.8rem; font-family: monospace; background: rgba(0,0,0,0.5);">
+                    [AI_VISION_FEED_ACTIVE] <br> SCANNING_INCIDENT_SITE... <br> DEPTH_MAP: OK
+                </div>
+                <!-- Dynamic Scan Line -->
+                <div style="position: absolute; width: 100%; height: 2px; background: rgba(244,63,94,0.4); top: 0; animation: scanAnim 3s infinite linear; box-shadow: 0 0 10px var(--primary);"></div>
+            </div>
+        </div>
+
         <div style="margin-top: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 1.5rem; padding: 2rem;">
             <h2 id="emergency-title" style="font-size: 1.8rem; margin-bottom: 0.5rem; color: #fff;">Detected: FIRE</h2>
             <ul id="action-list" class="action-list"></ul>
@@ -236,6 +255,20 @@
             } else {
                 medCard.style.display = 'none';
             }
+
+            // Handle Vision Logic
+            const vision = document.getElementById('vision-analysis');
+            const photo = document.getElementById('incident-photo');
+            const typeImages = {
+                fire: 'https://images.unsplash.com/photo-1542353436-312f02c16299?q=80&w=600',
+                accident: 'https://images.unsplash.com/photo-1595085610813-f667ca84d16d?q=80&w=600',
+                health: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=600',
+                natural_disaster: 'https://images.unsplash.com/photo-1511210414434-7389868779b7?q=80&w=600',
+                unknown: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600'
+            };
+            
+            photo.src = typeImages[data.emergency_type] || typeImages.unknown;
+            vision.style.display = 'block';
 
             const list = document.getElementById('action-list');
             list.innerHTML = "";
