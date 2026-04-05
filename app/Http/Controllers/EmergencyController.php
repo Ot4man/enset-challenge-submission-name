@@ -8,6 +8,7 @@ use App\Services\Agents\RiskAssessmentAgent;
 use App\Services\Agents\DecisionAgent;
 use App\Services\Agents\ActionAgent;
 use App\Services\Agents\VoiceDispatchAgent;
+use App\Services\Agents\MedicalAdviceAgent;
 use App\Models\EmergencyRecord;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -19,19 +20,22 @@ class EmergencyController extends Controller
     protected $decisionMaker;
     protected $actionFormatter;
     protected $voiceDispatcher;
+    protected $medicalAdvisor;
 
     public function __construct(
         InputAnalyzerAgent $inputAnalyzer,
         RiskAssessmentAgent $riskAssessor,
         DecisionAgent $decisionMaker,
         ActionAgent $actionFormatter,
-        VoiceDispatchAgent $voiceDispatcher
+        VoiceDispatchAgent $voiceDispatcher,
+        MedicalAdviceAgent $medicalAdvisor
     ) {
         $this->inputAnalyzer = $inputAnalyzer;
         $this->riskAssessor = $riskAssessor;
         $this->decisionMaker = $decisionMaker;
         $this->actionFormatter = $actionFormatter;
         $this->voiceDispatcher = $voiceDispatcher;
+        $this->medicalAdvisor = $medicalAdvisor;
     }
 
     public function home(): View
@@ -90,14 +94,17 @@ class EmergencyController extends Controller
         $result = $this->actionFormatter->format($decision);
         
         // Voice dispatch simulation
-        $finalResponse = $this->voiceDispatcher->dispatch($result);
+        $dispatchData = $this->voiceDispatcher->dispatch($result);
+
+        // Medical advice (Conditional agent)
+        $finalResponse = $this->medicalAdvisor->provideTips($dispatchData);
 
         // Store record in database
         EmergencyRecord::create([
             'message' => $message,
             'type' => $result['emergency_type'],
             'risk_level' => $result['risk_level'],
-            'actions' => $result['actions']
+            'actions' => $result['actions'],
         ]);
 
         return response()->json($finalResponse);
